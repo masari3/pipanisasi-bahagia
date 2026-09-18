@@ -1,0 +1,571 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum JenisKegiatan {
+  PIPANISASI
+  SUMUR
+  AIR_BERSIH
+  SOSIAL
+}
+
+enum StatusKegiatan {
+  DRAFT
+  PROPOSAL
+  PENGGALANGAN_DANA
+  PELAKSANAAN
+  SELESAI
+  LAPORAN
+  ARSIP
+}
+
+enum StatusProposal {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum StatusRab {
+  DRAFT
+  APPROVED
+  REVISION
+}
+
+enum KategoriRabItem {
+  MATERIAL
+  TRANSPORTASI
+  KONSUMSI
+  TENAGA
+  PERALATAN
+  LAINNYA
+}
+
+enum MetodeDonasi {
+  TRANSFER
+  CASH
+  QRIS
+  OTHER
+}
+
+enum StatusDonasi {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum KategoriPengeluaran {
+  MATERIAL
+  TRANSPORTASI
+  KONSUMSI
+  TENAGA
+  OPERASIONAL
+  LAINNYA
+}
+
+enum StatusPengeluaran {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum StatusAgenda {
+  PLANNED
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum KategoriDokumentasi {
+  SURVEY
+  PELAKSANAAN
+  MATERIAL
+  PENYALURAN
+  SELESAI
+}
+
+enum TipeLaporan {
+  KEUANGAN
+  KEGIATAN
+  PERTANGGUNGJAWABAN
+  PUBLIK
+}
+
+enum StatusLaporan {
+  DRAFT
+  PUBLISHED
+}
+
+enum TipeNotifikasi {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+}
+
+// ==================== Auth Models ====================
+
+model User {
+  id            String    @id @default(uuid()) @db.Uuid
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  phone         String?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts        Account[]
+  sessions        Session[]
+  userRoles       UserRole[]
+  notifications   Notification[]
+  activityLogs    ActivityLog[]
+  mediaUploads    Media[]
+
+  createdKegiatan Kegiatan[]          @relation("KegiatanCreatedBy")
+  verifiedDonasi  Donasi[]            @relation("DonasiVerifiedBy")
+  verifiedPengeluaran Pengeluaran[]   @relation("PengeluaranVerifiedBy")
+  createdLaporan  Laporan[]           @relation("LaporanCreatedBy")
+
+  @@index([email])
+  @@index([isActive])
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(uuid()) @db.Uuid
+  userId            String  @db.Uuid
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(uuid()) @db.Uuid
+  sessionToken String   @unique
+  userId       String   @db.Uuid
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ==================== RBAC Models ====================
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  description String?
+  module      String
+  createdAt   DateTime @default(now())
+
+  rolePermissions RolePermission[]
+
+  @@index([module])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String @id @default(uuid()) @db.Uuid
+  roleId       String @db.Uuid
+  permissionId String @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  roleId String @db.Uuid
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
+// ==================== Kegiatan Models ====================
+
+model Kegiatan {
+  id                   String          @id @default(uuid()) @db.Uuid
+  kodeKegiatan         String          @unique
+  namaKegiatan         String
+  slug                 String          @unique
+  jenisKegiatan        JenisKegiatan
+  deskripsi            String?
+  latarBelakang        String?
+  tujuan               String?
+  lokasi               String?
+  alamat               String?
+  desa                 String?
+  kecamatan            String?
+  kabupaten            String?
+  provinsi             String?
+  latitude             Decimal?        @db.Decimal(10, 8)
+  longitude            Decimal?        @db.Decimal(11, 8)
+  tanggalMulai         DateTime?
+  tanggalSelesai       DateTime?
+  status               StatusKegiatan  @default(DRAFT)
+  targetDana           Decimal?        @db.Decimal(15, 2)
+  danaTerkumpul        Decimal         @default(0) @db.Decimal(15, 2)
+  totalPengeluaran     Decimal         @default(0) @db.Decimal(15, 2)
+  saldo                Decimal         @default(0) @db.Decimal(15, 2)
+  jumlahPenerimaManfaat Int?
+  jumlahMasjid         Int?
+  jumlahKk             Int?
+  panjangPipa          Decimal?        @db.Decimal(10, 2)
+  sumberAir            String?
+  createdBy            String          @db.Uuid
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  creator        User            @relation("KegiatanCreatedBy", fields: [createdBy], references: [id])
+  proposals      Proposal[]
+  rabs           Rab[]
+  donasis        Donasi[]
+  pengeluarans   Pengeluaran[]
+  agendas        Agenda[]
+  dokumentasis   Dokumentasi[]
+  laporans       Laporan[]
+
+  @@index([kodeKegiatan])
+  @@index([slug])
+  @@index([status])
+  @@index([jenisKegiatan])
+  @@index([createdBy])
+  @@index([createdAt])
+  @@map("kegiatans")
+}
+
+// ==================== Proposal Models ====================
+
+model Proposal {
+  id          String         @id @default(uuid()) @db.Uuid
+  kegiatanId  String         @db.Uuid
+  judul       String
+  isi         String?        @db.Text
+  fileUrl     String?
+  status      StatusProposal @default(DRAFT)
+  submittedAt DateTime?
+  reviewedAt  DateTime?
+  reviewedBy  String?        @db.Uuid
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  kegiatan Kegiatan @relation(fields: [kegiatanId], references: [id], onDelete: Cascade)
+
+  @@index([kegiatanId])
+  @@index([status])
+  @@map("proposals")
+}
+
+// ==================== RAB Models ====================
+
+model Rab {
+  id         String    @id @default(uuid()) @db.Uuid
+  kegiatanId String    @db.Uuid
+  kodeRab    String    @unique
+  judul      String
+  total      Decimal   @db.Decimal(15, 2)
+  status     StatusRab @default(DRAFT)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  kegiatan  Kegiatan   @relation(fields: [kegiatanId], references: [id], onDelete: Cascade)
+  rabItems  RabItem[]
+
+  @@index([kegiatanId])
+  @@index([kodeRab])
+  @@map("rabs")
+}
+
+model RabItem {
+  id          String        @id @default(uuid()) @db.Uuid
+  rabId       String        @db.Uuid
+  namaItem    String
+  kategori    KategoriRabItem
+  volume      Decimal       @db.Decimal(10, 2)
+  satuan      String
+  hargaSatuan Decimal       @db.Decimal(15, 2)
+  jumlah      Decimal       @db.Decimal(15, 2)
+  keterangan  String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  rab Rab @relation(fields: [rabId], references: [id], onDelete: Cascade)
+
+  @@index([rabId])
+  @@index([kategori])
+  @@map("rab_items")
+}
+
+// ==================== Donasi Models ====================
+
+model Donatur {
+  id        String   @id @default(uuid()) @db.Uuid
+  nama      String
+  email     String?
+  phone     String?
+  alamat    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  donasis Donasi[]
+
+  @@index([nama])
+  @@map("donaturs")
+}
+
+model Donasi {
+  id            String       @id @default(uuid()) @db.Uuid
+  kegiatanId    String       @db.Uuid
+  donaturId     String?      @db.Uuid
+  namaDonatur   String?
+  tanggal       DateTime     @default(now())
+  nominal       Decimal      @db.Decimal(15, 2)
+  metode        MetodeDonasi
+  bank          String?
+  rekening      String?
+  buktiUrl      String?
+  status        StatusDonasi @default(PENDING)
+  keterangan    String?
+  verifiedAt    DateTime?
+  verifiedBy    String?      @db.Uuid
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  kegiatan  Kegiatan  @relation(fields: [kegiatanId], references: [id], onDelete: Cascade)
+  donatur   Donatur?  @relation(fields: [donaturId], references: [id], onDelete: SetNull)
+  verifier  User?     @relation("DonasiVerifiedBy", fields: [verifiedBy], references: [id], onDelete: SetNull)
+
+  @@index([kegiatanId])
+  @@index([donaturId])
+  @@index([status])
+  @@index([tanggal])
+  @@map("donasis")
+}
+
+// ==================== Pengeluaran Models ====================
+
+model Pengeluaran {
+  id              String              @id @default(uuid()) @db.Uuid
+  kegiatanId      String              @db.Uuid
+  tanggal         DateTime            @default(now())
+  nomorTransaksi  String              @unique
+  kategori        KategoriPengeluaran
+  deskripsi       String?
+  nominal         Decimal             @db.Decimal(15, 2)
+  vendor          String?
+  buktiUrl        String?
+  status          StatusPengeluaran   @default(PENDING)
+  keterangan      String?
+  verifiedAt      DateTime?
+  verifiedBy      String?             @db.Uuid
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  kegiatan Kegiatan @relation(fields: [kegiatanId], references: [id], onDelete: Cascade)
+  verifier User?    @relation("PengeluaranVerifiedBy", fields: [verifiedBy], references: [id], onDelete: SetNull)
+
+  @@index([kegiatanId])
+  @@index([nomorTransaksi])
+  @@index([status])
+  @@index([kategori])
+  @@index([tanggal])
+  @@map("pengeluarans")
+}
+
+// ==================== Agenda Models ====================
+
+model Agenda {
+  id               String       @id @default(uuid()) @db.Uuid
+  kegiatanId       String       @db.Uuid
+  judul            String
+  tanggal          DateTime     @default(now())
+  waktuMulai       DateTime?
+  waktuSelesai     DateTime?
+  lokasi           String?
+  deskripsi        String?
+  status           StatusAgenda @default(PLANNED)
+  penanggungJawab  String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  kegiatan Kegiatan @relation(fields: [kegiatanId], references: [id], onDelete: Cascade)
+
+  @@index([kegiatanId])
+  @@index([tanggal])
+  @@index([status])
+  @@map("agendas")
+}
+
+// ==================== Dokumentasi Models ====================
+
+model Dokumentasi {
+  id          String              @id @default(uuid()) @db.Uuid
+  kegiatanId  String              @db.Uuid
+  judul       String
+  deskripsi   String?
+  fileUrl     String?
+  thumbnailUrl String?
+  tanggal     DateTime            @default(now())
+  kategori    KategoriDokumentasi
+  caption     String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  kegiatan Kegiatan @relation(fields: [kegiatanId], references: [id], onDelete: Cascade)
+
+  @@index([kegiatanId])
+  @@index([kategori])
+  @@index([tanggal])
+  @@map("dokumentasis")
+}
+
+// ==================== Laporan Models ====================
+
+model Laporan {
+  id          String        @id @default(uuid()) @db.Uuid
+  kegiatanId  String        @db.Uuid
+  judul       String
+  isi         String?       @db.Text
+  tipeLaporan TipeLaporan
+  fileUrl     String?
+  status      StatusLaporan @default(DRAFT)
+  publishedAt DateTime?
+  createdBy   String        @db.Uuid
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  kegiatan Kegiatan @relation(fields: [kegiatanId], references: [id], onDelete: Cascade)
+  creator  User     @relation("LaporanCreatedBy", fields: [createdBy], references: [id])
+
+  @@index([kegiatanId])
+  @@index([tipeLaporan])
+  @@index([status])
+  @@map("laporans")
+}
+
+// ==================== Notification Models ====================
+
+model Notification {
+  id        String         @id @default(uuid()) @db.Uuid
+  userId    String         @db.Uuid
+  judul     String
+  pesan     String?
+  tipe      TipeNotifikasi @default(INFO)
+  isRead    Boolean        @default(false)
+  link      String?
+  createdAt DateTime       @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ==================== Activity Log Models ====================
+
+model ActivityLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  action    String
+  entity    String
+  entityId  String?
+  oldData   Json?
+  newData   Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
+
+// ==================== Media Models ====================
+
+model Media {
+  id           String   @id @default(uuid()) @db.Uuid
+  filename     String
+  originalName String?
+  mimeType     String?
+  size         Int?
+  url          String
+  thumbnailUrl String?
+  uploadedBy   String   @db.Uuid
+  createdAt    DateTime @default(now())
+
+  uploader User @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+
+  @@index([uploadedBy])
+  @@index([mimeType])
+  @@map("media")
+}
+
+// ==================== Settings Models ====================
+
+model Setting {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  value       String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([key])
+  @@map("settings")
+}
