@@ -136,6 +136,8 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
       };
     }, [open, onOpenChange]);
 
+    if (!open) return null;
+
     return (
       <DialogPortal>
         <DialogOverlay />

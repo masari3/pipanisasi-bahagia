@@ -13,9 +13,31 @@ export async function GET(
       where: { id },
       include: {
         creator: { select: { id: true, name: true, email: true } },
-        proposals: true,
-        rabs: { include: { rabItems: true } },
-        _count: { select: { donasis: true, pengeluarans: true } },
+        proposals: { select: { id: true, judul: true, status: true, submittedAt: true, createdAt: true } },
+        rabs: {
+          include: { rabItems: true },
+          select: { id: true, kodeRab: true, judul: true, total: true, status: true, rabItems: true },
+        },
+        donasis: {
+          select: { id: true, namaDonatur: true, nominal: true, metode: true, status: true, tanggal: true },
+          orderBy: { tanggal: 'desc' },
+        },
+        pengeluarans: {
+          select: { id: true, deskripsi: true, kategori: true, nominal: true, status: true, tanggal: true },
+          orderBy: { tanggal: 'desc' },
+        },
+        agendas: {
+          select: { id: true, judul: true, tanggal: true, status: true, deskripsi: true },
+          orderBy: { tanggal: 'asc' },
+        },
+        dokumentasis: {
+          select: { id: true, judul: true, kategori: true, fileUrl: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+        },
+        laporans: {
+          select: { id: true, judul: true, tipeLaporan: true, status: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+        },
       },
     })
 

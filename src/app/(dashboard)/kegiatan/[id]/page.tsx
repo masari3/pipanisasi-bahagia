@@ -20,6 +20,7 @@ import {
   FileBarChart,
   Landmark,
   Loader2,
+  Edit,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -229,7 +230,7 @@ export default function KegiatanDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-3">
+        <div className="flex items-start gap-3">
         <Button
           variant="ghost"
           size="icon"
@@ -263,6 +264,15 @@ export default function KegiatanDetailPage() {
             <span className="font-mono text-xs">{data.kodeKegiatan}</span>
           </div>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="shrink-0"
+          onClick={() => router.push(`/kegiatan/${id}/edit`)}
+        >
+          <Edit className="h-4 w-4 mr-1.5" />
+          Edit
+        </Button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
@@ -490,7 +500,7 @@ export default function KegiatanDetailPage() {
       {activeTab === "proposal" && (
         <Card>
           <CardContent className="p-0">
-            {data.proposals.length === 0 ? (
+            {(data.proposals || []).length === 0 ? (
               <div className="py-12 text-center text-sm text-muted-foreground">
                 Belum ada proposal
               </div>
@@ -509,7 +519,7 @@ export default function KegiatanDetailPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.proposals.map((p) => (
+                  {(data.proposals || []).map((p) => (
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">{p.judul}</TableCell>
                       <TableCell>
@@ -542,14 +552,14 @@ export default function KegiatanDetailPage() {
 
       {activeTab === "rab" && (
         <div className="space-y-4">
-          {data.rabs.length === 0 ? (
+          {(data.rabs || []).length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center text-sm text-muted-foreground">
                 Belum ada RAB
               </CardContent>
             </Card>
           ) : (
-            data.rabs.map((rab) => (
+            (data.rabs || []).map((rab) => (
               <Card key={rab.id}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -637,7 +647,7 @@ export default function KegiatanDetailPage() {
       {activeTab === "donasi" && (
         <Card>
           <CardContent className="p-0">
-            {data.donasis.length === 0 ? (
+            {(data.donasis || []).length === 0 ? (
               <div className="py-12 text-center text-sm text-muted-foreground">
                 Belum ada dana masuk
               </div>
@@ -659,7 +669,7 @@ export default function KegiatanDetailPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.donasis.map((d) => (
+                  {(data.donasis || []).map((d) => (
                     <TableRow key={d.id}>
                       <TableCell className="font-medium">
                         {d.namaDonatur || "Anonim"}
@@ -698,7 +708,7 @@ export default function KegiatanDetailPage() {
       {activeTab === "pengeluaran" && (
         <Card>
           <CardContent className="p-0">
-            {data.pengeluarans.length === 0 ? (
+            {(data.pengeluarans || []).length === 0 ? (
               <div className="py-12 text-center text-sm text-muted-foreground">
                 Belum ada pengeluaran
               </div>
@@ -720,7 +730,7 @@ export default function KegiatanDetailPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.pengeluarans.map((p) => (
+                  {(data.pengeluarans || []).map((p) => (
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">
                         {p.deskripsi}
@@ -759,7 +769,7 @@ export default function KegiatanDetailPage() {
       {activeTab === "agenda" && (
         <Card>
           <CardContent className="p-0">
-            {data.agendas.length === 0 ? (
+            {(data.agendas || []).length === 0 ? (
               <div className="py-12 text-center text-sm text-muted-foreground">
                 Belum ada agenda
               </div>
@@ -776,7 +786,7 @@ export default function KegiatanDetailPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.agendas.map((a) => (
+                  {(data.agendas || []).map((a) => (
                     <TableRow key={a.id}>
                       <TableCell className="font-medium">{a.judul}</TableCell>
                       <TableCell className="text-sm">
@@ -812,13 +822,13 @@ export default function KegiatanDetailPage() {
       {activeTab === "dokumentasi" && (
         <Card>
           <CardContent>
-            {data.dokumentasis.length === 0 ? (
+            {(data.dokumentasis || []).length === 0 ? (
               <div className="py-12 text-center text-sm text-muted-foreground">
                 Belum ada dokumentasi
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {data.dokumentasis.map((d) => (
+                {(data.dokumentasis || []).map((d) => (
                   <div
                     key={d.id}
                     className="group relative aspect-square rounded-lg overflow-hidden bg-muted"
@@ -851,7 +861,7 @@ export default function KegiatanDetailPage() {
       {activeTab === "laporan" && (
         <Card>
           <CardContent className="p-0">
-            {data.laporans.length === 0 ? (
+            {(data.laporans || []).length === 0 ? (
               <div className="py-12 text-center text-sm text-muted-foreground">
                 Belum ada laporan
               </div>
@@ -868,11 +878,11 @@ export default function KegiatanDetailPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.laporans.map((l) => (
+                  {(data.laporans || []).map((l) => (
                     <TableRow key={l.id}>
                       <TableCell className="font-medium">{l.judul}</TableCell>
                       <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
-                        {l.tipe}
+                        {l.tipeLaporan}
                       </TableCell>
                       <TableCell>
                         <Badge

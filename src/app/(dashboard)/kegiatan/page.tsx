@@ -403,7 +403,7 @@ export default function KegiatanPage() {
                               size="icon"
                               className="h-8 w-8"
                               onClick={() =>
-                                router.push(`/kegiatan/${item.id}`)
+                                router.push(`/kegiatan/${item.id}/edit`)
                               }
                               title="Edit"
                             >
